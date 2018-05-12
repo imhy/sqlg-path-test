@@ -34,19 +34,19 @@ public class PathTest {
 
 	@Test
 	public void pathsShouldBeTheSameTest() {
-		List<SinglePath> sqlgResult = pathTestSqlg();
-		List<SinglePath> thinkerGraphResult = pathTestTinkerGraph();
+		List<SinglePath> sqlgGraphResult = pathsSqlgGraph();
+		List<SinglePath> tinkerGraphResult = pathsTinkerGraph();
 
-		Assert.assertNotNull(sqlgResult);
-		Assert.assertNotNull(thinkerGraphResult);
-		printResult("SqlgGraph", sqlgResult);
-		printResult("ThinkerGraph", thinkerGraphResult);
+		Assert.assertNotNull(sqlgGraphResult);
+		Assert.assertNotNull(tinkerGraphResult);
+		printResult("SqlgGraph", sqlgGraphResult);
+		printResult("ThinkerGraph", tinkerGraphResult);
 
-		boolean theSame = compareResults(thinkerGraphResult, sqlgResult);
+		boolean theSame = compareResults(tinkerGraphResult, sqlgGraphResult);
 		Assert.assertTrue(theSame);
 	}
 
-	private List<SinglePath> pathTestSqlg() {
+	private List<SinglePath> pathsSqlgGraph() {
 		Configuration configuration = getSqlgConfiguration();
 		List<SinglePath> paths = null;
 
@@ -85,7 +85,7 @@ public class PathTest {
 	}
 
 
-	private List<SinglePath> pathTestTinkerGraph() {
+	private List<SinglePath> pathsTinkerGraph() {
 
 		Configuration config = new BaseConfiguration();
 		config.setProperty("gremlin.graph", "org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph");
@@ -151,63 +151,14 @@ public class PathTest {
 		return configuration;
 	}
 
-	private class SinglePath {
-		private int speed;
-		private ImmutablePath immutablePath;
-		private String path;
-
-		public SinglePath(Object p) {
-			ArrayList<Object> arr = (ArrayList) p;
-			this.speed = Integer.valueOf(arr.get(0).toString());
-			this.immutablePath = (ImmutablePath) arr.get(1);
-			this.path = pathToStr(this.immutablePath);
-		}
-
-		public String getPath() {
-			return path;
-		}
-
-		@Override
-		public String toString() {
-			final StringBuilder sb = new StringBuilder("[");
-			sb.append("speed: ").append(speed);
-			sb.append(", path: ").append(path);
-			sb.append(']');
-			return sb.toString();
-		}
-
-		@Override
-		public int hashCode() {
-			return path != null ? (String.valueOf(speed) + path).hashCode() : 0;
-		}
-
-		@Override
-		public boolean equals(Object that) {
-			if (that == null) return false;
-			if (this == that) return true;
-			if (this.getClass() != that.getClass()) return false;
-			SinglePath o = (SinglePath) that;
-			return (this.path != null && o.getPath() != null && this.path.equals(o.getPath()) && this.speed == o.speed);
-		}
-	}
-
-	private String pathToStr(ImmutablePath p) {
-		List<Object> objects = p.objects();
-		return objects.stream().map(this::elementToCode).collect(Collectors.joining("-"));
-	}
-
-	private String elementToCode(Object element) {
-		Element e = (Element) element;
-		return e.property("code").orElse("n/a").toString();
-	}
-
 	private boolean compareResults(List<SinglePath> etalon, List<SinglePath> check) {
 		boolean ok = true;
+		if (etalon == null || check == null) return false;
 
 		Map<SinglePath, Integer> countEtalon = etalon.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(etalon, p)));
 		Map<SinglePath, Integer> countCheck = check.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(check, p)));
 
-		List<SinglePath> theSamePaths = etalon.stream().filter(e -> check.contains(e)).collect(Collectors.toList());
+		List<SinglePath> theSamePaths = etalon.stream().filter(check::contains).collect(Collectors.toList());
 		List<SinglePath> wrongPaths = check.stream().filter(e -> !etalon.contains(e)).collect(Collectors.toList());
 		List<SinglePath> missingPaths = etalon.stream().filter(e -> !check.contains(e)).collect(Collectors.toList());
 		List<SinglePath> wrongCountPaths = theSamePaths.stream().filter(p -> !countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
@@ -235,4 +186,54 @@ public class PathTest {
 		return ok;
 	}
 
+	private class SinglePath {
+		private int speed;
+		private ImmutablePath immutablePath;
+		private String path;
+
+		public SinglePath(Object p) {
+			ArrayList<Object> arr = (ArrayList) p;
+			this.speed = Integer.valueOf(arr.get(0).toString());
+			this.immutablePath = (ImmutablePath) arr.get(1);
+			this.path = pathToStr(this.immutablePath);
+		}
+
+
+		public String getPath() {
+			return path;
+		}
+
+		private String pathToStr(ImmutablePath p) {
+			List<Object> objects = p.objects();
+			return objects.stream().map(this::elementToCode).collect(Collectors.joining("-"));
+		}
+
+		private String elementToCode(Object element) {
+			Element e = (Element) element;
+			return e.property("code").orElse("n/a").toString();
+		}
+
+		@Override
+		public String toString() {
+			final StringBuilder sb = new StringBuilder("[");
+			sb.append("speed: ").append(speed);
+			sb.append(", path: ").append(path);
+			sb.append(']');
+			return sb.toString();
+		}
+
+		@Override
+		public int hashCode() {
+			return path != null ? (String.valueOf(speed) + path).hashCode() : 0;
+		}
+
+		@Override
+		public boolean equals(Object that) {
+			if (that == null) return false;
+			if (this == that) return true;
+			if (this.getClass() != that.getClass()) return false;
+			SinglePath o = (SinglePath) that;
+			return (this.path != null && o.getPath() != null && this.path.equals(o.getPath()) && this.speed == o.speed);
+		}
+	}
 }
