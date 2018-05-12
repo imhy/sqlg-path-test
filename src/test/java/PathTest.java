@@ -43,7 +43,7 @@ public class PathTest {
 		printResult("TinkerGraph", tinkerGraphResult);
 
 		boolean theSame = compareResults(tinkerGraphResult, sqlgGraphResult);
-		Assert.assertTrue(theSame);
+		Assert.assertTrue("Paths must be the same.",theSame);
 	}
 
 	private List<SinglePath> pathsSqlgGraph() {
