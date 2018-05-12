@@ -40,7 +40,7 @@ public class PathTest {
 		Assert.assertNotNull(sqlgGraphResult);
 		Assert.assertNotNull(tinkerGraphResult);
 		printResult("SqlgGraph", sqlgGraphResult);
-		printResult("ThinkerGraph", tinkerGraphResult);
+		printResult("TinkerGraph", tinkerGraphResult);
 
 		boolean theSame = compareResults(tinkerGraphResult, sqlgGraphResult);
 		Assert.assertTrue(theSame);
