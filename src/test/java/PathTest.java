@@ -34,21 +34,29 @@ public class PathTest {
 	private static final String JDBC_USERNAME = "svs";
 	private static final String JDBC_PASSWORD = "svs";
 	private static final long VERTICES_COUNT = 4L;
-	private static final long EDGES_COUNT = 6L;
+	private static final long EDGES_COUNT = 5L;
 	private static final int MAX_PATH_LENGTH = 20;
 
 	@Test
 	public void loadDataSqlg() {
 		Configuration configuration = getSqlgConfiguration();
-		Graph graph = SqlgGraph.open(configuration);
-		graph.tx().open();
-		loadData(graph);
-		graph.tx().commit();
-		GraphTraversalSource g = graph.traversal();
-		long v = g.V().count().next();
-		long e = g.E().count().next();
-		Assert.assertEquals(VERTICES_COUNT, v);
-		Assert.assertEquals(EDGES_COUNT, e);
+		GraphTraversalSource g;
+		long verticesCount = 0L;
+		long edgesCount = 0L;
+		try (Graph graph = SqlgGraph.open(configuration)) {
+			graph.tx().open();
+			loadData(graph);
+			graph.tx().commit();
+			g = graph.traversal();
+			verticesCount = g.V().count().next();
+			edgesCount = g.E().count().next();
+		} catch (Exception ex) {
+			LOG.error(ex.getMessage(), ex);
+			Assert.fail(ex.getMessage());
+		}
+
+		Assert.assertEquals(VERTICES_COUNT, verticesCount);
+		Assert.assertEquals(EDGES_COUNT, edgesCount);
 	}
 
 	@Test
@@ -229,7 +237,7 @@ public class PathTest {
 
 		@Override
 		public String toString() {
-			return  "[" + "speed: " + speed +
+			return "[" + "speed: " + speed +
 					", path: " + path +
 					']';
 		}
