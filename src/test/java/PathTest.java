@@ -38,7 +38,7 @@ public class PathTest {
 	private static final int MAX_PATH_LENGTH = 20;
 
 	@Test
-	public void loadDataSqlg() {
+	public void loadDataSqlgTest() {
 		Configuration configuration = getSqlgConfiguration();
 		GraphTraversalSource g;
 		long verticesCount = 0L;
