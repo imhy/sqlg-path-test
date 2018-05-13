@@ -82,7 +82,7 @@ public class PathTest {
 		} else if (paths.isEmpty()) {
 			LOG.info("Result is empty");
 		} else {
-			paths.stream().forEach(p -> LOG.info(p.toString()));
+			paths.forEach(p -> LOG.info(p.toString()));
 		}
 	}
 
@@ -138,11 +138,11 @@ public class PathTest {
 		Vertex v3 = graph.addVertex("code", "v3");
 
 
-		v0.addEdge("tsw", v1, "speed", "1", "readyTime", 10l, "depTime", 5l, "dow", 1, "code", "e0");
-		v1.addEdge("tsw", v2, "speed", "1", "readyTime", 15l, "depTime", 9l, "dow", 1, "code", "e1"); //must be ignored in longest path
-		v1.addEdge("tsw", v2, "speed", "1", "readyTime", 20l, "depTime", 17l, "dow", 1, "code", "e2"); //must be used in longest path
-		v2.addEdge("tsw", v3, "speed", "1", "readyTime", 30l, "depTime", 25l, "dow", 1, "code", "e3");
-		v1.addEdge("tsw", v2, "speed", "2", "readyTime", 28l, "depTime", 23l, "dow", 1, "code", "e4"); //speed 2
+		v0.addEdge("tsw", v1, "speed", "1", "readyTime", 10L, "depTime", 5l, "dow", 1, "code", "e0");
+		v1.addEdge("tsw", v2, "speed", "1", "readyTime", 15L, "depTime", 9l, "dow", 1, "code", "e1"); //must be ignored in longest path
+		v1.addEdge("tsw", v2, "speed", "1", "readyTime", 20L, "depTime", 17l, "dow", 1, "code", "e2"); //must be used in longest path
+		v2.addEdge("tsw", v3, "speed", "1", "readyTime", 30L, "depTime", 25l, "dow", 1, "code", "e3");
+		v1.addEdge("tsw", v2, "speed", "2", "readyTime", 28L, "depTime", 23l, "dow", 1, "code", "e4"); //speed 2
 	}
 
 	private Configuration getSqlgConfiguration() {
@@ -167,25 +167,25 @@ public class PathTest {
 
 		List<SinglePath> okPaths = theSamePaths.stream().filter(p -> countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
 
-		boolean ok = Stream.of(
+		boolean theSame = Stream.of(
 				check(empty, "Wrong Paths", wrongPaths),
 				check(empty, "Missing Paths", missingPaths),
 				check(empty, "Wrong count Paths", wrongCountPaths),
 				check(notEmpty, "Ok Paths", okPaths)).
 				allMatch(p -> p);
 
-		if (!ok) {
+		if (!theSame) {
 			printResult("Ok Paths", okPaths);
 		}
 
-		return ok;
+		return theSame;
 	}
 
 	private boolean check(BiFunction<String, List<SinglePath>, Boolean> f, String label, List<SinglePath> list) {
 		return f.apply(label, list);
 	}
 
-	private BiFunction<String, List<SinglePath>, Boolean> empty = (label, list) -> {
+	private final BiFunction<String, List<SinglePath>, Boolean> empty = (label, list) -> {
 		if (!list.isEmpty()) {
 			printResult(label, list);
 			return false;
@@ -194,7 +194,7 @@ public class PathTest {
 		}
 	};
 
-	private BiFunction<String, List<SinglePath>, Boolean> notEmpty = (label, list) -> {
+	private final BiFunction<String, List<SinglePath>, Boolean> notEmpty = (label, list) -> {
 		if (list.isEmpty()) {
 			LOG.info("{} is empty", label);
 			return false;
@@ -204,9 +204,9 @@ public class PathTest {
 	};
 
 	private class SinglePath {
-		private int speed;
-		private ImmutablePath immutablePath;
-		private String path;
+		private final int speed;
+		private final ImmutablePath immutablePath;
+		private final String path;
 
 		private SinglePath(Object p) {
 			ArrayList<Object> arr = (ArrayList) p;
