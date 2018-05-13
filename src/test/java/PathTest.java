@@ -33,6 +33,23 @@ public class PathTest {
 	private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/sqlg_test";
 	private static final String JDBC_USERNAME = "svs";
 	private static final String JDBC_PASSWORD = "svs";
+	private static final long VERTICES_COUNT = 4L;
+	private static final long EDGES_COUNT = 6L;
+	private static final int MAX_PATH_LENGTH = 20;
+
+	@Test
+	public void loadDataSqlg() {
+		Configuration configuration = getSqlgConfiguration();
+		Graph graph = SqlgGraph.open(configuration);
+		graph.tx().open();
+		loadData(graph);
+		graph.tx().commit();
+		GraphTraversalSource g = graph.traversal();
+		long v = g.V().count().next();
+		long e = g.E().count().next();
+		Assert.assertEquals(VERTICES_COUNT, v);
+		Assert.assertEquals(EDGES_COUNT, e);
+	}
 
 	@Test
 	public void pathsShouldBeTheSameTest() {
@@ -54,16 +71,25 @@ public class PathTest {
 
 		try (Graph graph = SqlgGraph.open(configuration)) {
 			GraphTraversalSource g = graph.traversal();
-
 			GraphTraversal traversal = getTraversal(g);
-
-			LOG.info("start traversal SqlgGraph, vertex count: {}", g.V().count().next());
+			LOG.info("Start traversal SqlgGraph, vertex count: {}", g.V().count().next());
 			paths = getResult(traversal);
-
 		} catch (Exception e) {
 			LOG.error(e.getMessage(), e);
+			Assert.fail(e.getMessage());
 		}
 		return paths;
+	}
+
+	private List<SinglePath> pathsTinkerGraph() {
+		Configuration config = new BaseConfiguration();
+		config.setProperty("gremlin.graph", "org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph");
+		Graph graph = GraphFactory.open(config);
+		GraphTraversalSource g = graph.traversal();
+		loadData(graph);
+		GraphTraversal traversal = getTraversal(g);
+		LOG.info("Start traversal ThinkerGraph, vertex count: {}", g.V().count().next());
+		return getResult(traversal);
 	}
 
 	private List<SinglePath> getResult(GraphTraversal traversal) {
@@ -86,21 +112,6 @@ public class PathTest {
 		}
 	}
 
-
-	private List<SinglePath> pathsTinkerGraph() {
-
-		Configuration config = new BaseConfiguration();
-		config.setProperty("gremlin.graph", "org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph");
-
-		Graph graph = GraphFactory.open(config);
-		GraphTraversalSource g = graph.traversal();
-		loadData(graph);
-		GraphTraversal traversal = getTraversal(g);
-
-		LOG.info("start traversal ThinkerGraph, vertex count: {}", g.V().count().next());
-		return getResult(traversal);
-	}
-
 	private GraphTraversal getTraversal(GraphTraversalSource g) {
 		Function timeAtWarehouse = (Object o) -> {
 			Map m = (Map) o;
@@ -115,19 +126,7 @@ public class PathTest {
 								group().by(__.inV()).by(__.project("curr", "prev").by().by(__.select(last, "e")).fold()).
 								select(Column.values).unfold().order(local).by(timeAtWarehouse).limit(local, 1).select("curr")
 				).as("e").inV().simplePath()
-		).times(20).map(__.union((Traversal) __.select(last, "e").by("speed"), (Traversal) __.path()).fold());
-	}
-
-	@Test
-	public void loadDataSqlg() {
-		Configuration configuration = getSqlgConfiguration();
-
-		Graph graph = SqlgGraph.open(configuration);
-
-		graph.tx().open();
-		loadData(graph);
-		graph.tx().commit();
-
+		).times(MAX_PATH_LENGTH).map(__.union((Traversal) __.select(last, "e").by("speed"), (Traversal) __.path()).fold());
 	}
 
 	private void loadData(Graph graph) {
@@ -137,12 +136,11 @@ public class PathTest {
 		Vertex v2 = graph.addVertex("code", "v2");
 		Vertex v3 = graph.addVertex("code", "v3");
 
-
-		v0.addEdge("tsw", v1, "speed", "1", "readyTime", 10L, "depTime", 5l, "dow", 1, "code", "e0");
-		v1.addEdge("tsw", v2, "speed", "1", "readyTime", 15L, "depTime", 9l, "dow", 1, "code", "e1"); //must be ignored in longest path
-		v1.addEdge("tsw", v2, "speed", "1", "readyTime", 20L, "depTime", 17l, "dow", 1, "code", "e2"); //must be used in longest path
-		v2.addEdge("tsw", v3, "speed", "1", "readyTime", 30L, "depTime", 25l, "dow", 1, "code", "e3");
-		v1.addEdge("tsw", v2, "speed", "2", "readyTime", 28L, "depTime", 23l, "dow", 1, "code", "e4"); //speed 2
+		v0.addEdge("tsw", v1, "speed", "1", "readyTime", 10L, "depTime", 5L, "dow", 1, "code", "e0");
+		v1.addEdge("tsw", v2, "speed", "1", "readyTime", 15L, "depTime", 9L, "dow", 1, "code", "e1"); //must be ignored in longest path
+		v1.addEdge("tsw", v2, "speed", "1", "readyTime", 20L, "depTime", 17L, "dow", 1, "code", "e2"); //must be used in longest path
+		v2.addEdge("tsw", v3, "speed", "1", "readyTime", 30L, "depTime", 25L, "dow", 1, "code", "e3");
+		v1.addEdge("tsw", v2, "speed", "2", "readyTime", 28L, "depTime", 23L, "dow", 1, "code", "e4"); //speed 2
 	}
 
 	private Configuration getSqlgConfiguration() {
@@ -164,7 +162,6 @@ public class PathTest {
 		List<SinglePath> wrongPaths = check.stream().filter(e -> !etalon.contains(e)).collect(Collectors.toList());
 		List<SinglePath> missingPaths = etalon.stream().filter(e -> !check.contains(e)).collect(Collectors.toList());
 		List<SinglePath> wrongCountPaths = theSamePaths.stream().filter(p -> !countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
-
 		List<SinglePath> okPaths = theSamePaths.stream().filter(p -> countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
 
 		boolean theSame = Stream.of(
@@ -232,11 +229,9 @@ public class PathTest {
 
 		@Override
 		public String toString() {
-			final StringBuilder sb = new StringBuilder("[");
-			sb.append("speed: ").append(speed);
-			sb.append(", path: ").append(path);
-			sb.append(']');
-			return sb.toString();
+			return  "[" + "speed: " + speed +
+					", path: " + path +
+					']';
 		}
 
 		@Override
