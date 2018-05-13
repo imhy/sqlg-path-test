@@ -18,8 +18,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Pop.last;
 import static org.apache.tinkerpop.gremlin.process.traversal.Scope.local;
@@ -43,7 +45,7 @@ public class PathTest {
 		printResult("TinkerGraph", tinkerGraphResult);
 
 		boolean theSame = compareResults(tinkerGraphResult, sqlgGraphResult);
-		Assert.assertTrue("Paths must be the same.",theSame);
+		Assert.assertTrue("Paths must be the same.", theSame);
 	}
 
 	private List<SinglePath> pathsSqlgGraph() {
@@ -118,7 +120,6 @@ public class PathTest {
 
 	@Test
 	public void loadDataSqlg() {
-
 		Configuration configuration = getSqlgConfiguration();
 
 		Graph graph = SqlgGraph.open(configuration);
@@ -126,6 +127,7 @@ public class PathTest {
 		graph.tx().open();
 		loadData(graph);
 		graph.tx().commit();
+
 	}
 
 	private void loadData(Graph graph) {
@@ -152,32 +154,25 @@ public class PathTest {
 	}
 
 	private boolean compareResults(List<SinglePath> etalon, List<SinglePath> check) {
-		boolean ok = true;
 		if (etalon == null || check == null) return false;
 
 		Map<SinglePath, Integer> countEtalon = etalon.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(etalon, p)));
 		Map<SinglePath, Integer> countCheck = check.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(check, p)));
 
 		List<SinglePath> theSamePaths = etalon.stream().filter(check::contains).collect(Collectors.toList());
+
 		List<SinglePath> wrongPaths = check.stream().filter(e -> !etalon.contains(e)).collect(Collectors.toList());
 		List<SinglePath> missingPaths = etalon.stream().filter(e -> !check.contains(e)).collect(Collectors.toList());
 		List<SinglePath> wrongCountPaths = theSamePaths.stream().filter(p -> !countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
+
 		List<SinglePath> okPaths = theSamePaths.stream().filter(p -> countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
 
-		if (!wrongPaths.isEmpty()) {
-			printResult("Wrong Paths", wrongPaths);
-			ok = false;
-		}
-
-		if (!missingPaths.isEmpty()) {
-			printResult("Missing Paths", wrongPaths);
-			ok = false;
-		}
-
-		if (!wrongCountPaths.isEmpty()) {
-			printResult("Wrong count Paths", wrongPaths);
-			ok = false;
-		}
+		boolean ok = Stream.of(
+				check(empty, "Wrong Paths", wrongPaths),
+				check(empty, "Missing Paths", missingPaths),
+				check(empty, "Wrong count Paths", wrongCountPaths),
+				check(notEmpty, "Ok Paths", okPaths)).
+				allMatch(p -> p);
 
 		if (!ok) {
 			printResult("Ok Paths", okPaths);
@@ -186,12 +181,34 @@ public class PathTest {
 		return ok;
 	}
 
+	private boolean check(BiFunction<String, List<SinglePath>, Boolean> f, String label, List<SinglePath> list) {
+		return f.apply(label, list);
+	}
+
+	private BiFunction<String, List<SinglePath>, Boolean> empty = (label, list) -> {
+		if (!list.isEmpty()) {
+			printResult(label, list);
+			return false;
+		} else {
+			return true;
+		}
+	};
+
+	private BiFunction<String, List<SinglePath>, Boolean> notEmpty = (label, list) -> {
+		if (list.isEmpty()) {
+			LOG.info("{} is empty", label);
+			return false;
+		} else {
+			return true;
+		}
+	};
+
 	private class SinglePath {
 		private int speed;
 		private ImmutablePath immutablePath;
 		private String path;
 
-		public SinglePath(Object p) {
+		private SinglePath(Object p) {
 			ArrayList<Object> arr = (ArrayList) p;
 			this.speed = Integer.valueOf(arr.get(0).toString());
 			this.immutablePath = (ImmutablePath) arr.get(1);
@@ -199,7 +216,7 @@ public class PathTest {
 		}
 
 
-		public String getPath() {
+		private String getPath() {
 			return path;
 		}
 
