@@ -122,9 +122,9 @@ public class PathTest {
 
 	private GraphTraversal getTraversal(GraphTraversalSource g) {
 		Function timeAtWarehouse = (Object o) -> {
-			Map m = (Map) o;
-			Long readyTime = ((Edge) (m.get("prev"))).value("readyTime");
-			Long depTime = ((Edge) (m.get("curr"))).value("depTime");
+			Map edgesMap = (Map) o;
+			Long readyTime = ((Edge) edgesMap.get("prev")).value("readyTime");
+			Long depTime = ((Edge) edgesMap.get("curr")).value("depTime");
 			return (depTime - readyTime) >= 0 ? (depTime - readyTime) : Long.MAX_VALUE;
 		};
 
@@ -159,16 +159,16 @@ public class PathTest {
 		return configuration;
 	}
 
-	private boolean compareResults(List<SinglePath> etalon, List<SinglePath> check) {
-		if (etalon == null || check == null) return false;
+	private boolean compareResults(List<SinglePath> etalon, List<SinglePath> other) {
+		if (etalon == null || other == null) return false;
 
 		Map<SinglePath, Integer> countEtalon = etalon.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(etalon, p)));
-		Map<SinglePath, Integer> countCheck = check.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(check, p)));
+		Map<SinglePath, Integer> countCheck = other.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(other, p)));
 
-		List<SinglePath> theSamePaths = etalon.stream().filter(check::contains).collect(Collectors.toList());
+		List<SinglePath> theSamePaths = etalon.stream().filter(other::contains).collect(Collectors.toList());
 
-		List<SinglePath> wrongPaths = check.stream().filter(e -> !etalon.contains(e)).collect(Collectors.toList());
-		List<SinglePath> missingPaths = etalon.stream().filter(e -> !check.contains(e)).collect(Collectors.toList());
+		List<SinglePath> wrongPaths = other.stream().filter(e -> !etalon.contains(e)).collect(Collectors.toList());
+		List<SinglePath> missingPaths = etalon.stream().filter(e -> !other.contains(e)).collect(Collectors.toList());
 		List<SinglePath> wrongCountPaths = theSamePaths.stream().filter(p -> !countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
 		List<SinglePath> okPaths = theSamePaths.stream().filter(p -> countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
 
