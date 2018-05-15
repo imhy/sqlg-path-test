@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -186,11 +187,11 @@ public class PathTest {
 		return theSame;
 	}
 
-	private boolean check(BiFunction<String, List<SinglePath>, Boolean> f, String label, List<SinglePath> list) {
-		return f.apply(label, list);
+	private boolean check(BiPredicate<String, List<SinglePath>> f, String label, List<SinglePath> list) {
+		return f.test(label, list);
 	}
 
-	private final BiFunction<String, List<SinglePath>, Boolean> empty = (label, list) -> {
+	private final BiPredicate<String, List<SinglePath>> empty = (label, list) -> {
 		if (!list.isEmpty()) {
 			printResult(label, list);
 			return false;
@@ -199,7 +200,7 @@ public class PathTest {
 		}
 	};
 
-	private final BiFunction<String, List<SinglePath>, Boolean> notEmpty = (label, list) -> {
+	private final BiPredicate<String, List<SinglePath>> notEmpty = (label, list) -> {
 		if (list.isEmpty()) {
 			LOG.info("{} is empty", label);
 			return false;
