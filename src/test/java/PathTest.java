@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -163,15 +162,26 @@ public class PathTest {
 	private boolean compareResults(List<SinglePath> etalon, List<SinglePath> other) {
 		if (etalon == null || other == null) return false;
 
-		Map<SinglePath, Integer> countEtalon = etalon.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(etalon, p)));
-		Map<SinglePath, Integer> countCheck = other.stream().collect(Collectors.toMap(p -> p, p -> Collections.frequency(other, p)));
+		Map<SinglePath, Integer> countEtalon = etalon.stream()
+				.distinct()
+				.collect(Collectors.toMap(p -> p, p -> Collections.frequency(etalon, p)));
+		Map<SinglePath, Integer> countCheck = other.stream()
+				.distinct()
+				.collect(Collectors.toMap(p -> p, p -> Collections.frequency(other, p)));
 
 		List<SinglePath> theSamePaths = etalon.stream().filter(other::contains).collect(Collectors.toList());
 
-		List<SinglePath> wrongPaths = other.stream().filter(e -> !etalon.contains(e)).collect(Collectors.toList());
-		List<SinglePath> missingPaths = etalon.stream().filter(e -> !other.contains(e)).collect(Collectors.toList());
-		List<SinglePath> wrongCountPaths = theSamePaths.stream().filter(p -> !countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
-		List<SinglePath> okPaths = theSamePaths.stream().filter(p -> countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
+		List<SinglePath> wrongPaths = other.stream()
+				.filter(e -> !etalon.contains(e)).collect(Collectors.toList());
+
+		List<SinglePath> missingPaths = etalon.stream()
+				.filter(e -> !other.contains(e)).collect(Collectors.toList());
+
+		List<SinglePath> wrongCountPaths = theSamePaths.stream()
+				.filter(p -> !countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
+
+		List<SinglePath> okPaths = theSamePaths.stream()
+				.filter(p -> countEtalon.get(p).equals(countCheck.get(p))).collect(Collectors.toList());
 
 		boolean theSame = Stream.of(
 				check(empty, "Wrong Paths", wrongPaths),
